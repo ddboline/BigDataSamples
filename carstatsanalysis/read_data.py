@@ -1,14 +1,18 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import os
 import re
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 def parse_long_string(inpstr):
     if type(inpstr) != str:
         print inpstr
-        return
+        return inpstr
     DIRECTIONS = 'NEWS'
     DIRECTIONS = {'N': +1, 'S': -1, 'E': +1, 'W': -1}
     inpstr = re.sub('[\xc2\xb0\'"]','',inpstr)
@@ -31,6 +35,7 @@ def read_data():
     #print help(pd.read_csv)
     df = pd.read_csv('data.csv', sep=';', header=None, names=car_columns)
 
+    print df['laptime2']
     #print df.shape
     #print df.columns
     #print df.head()
@@ -39,12 +44,21 @@ def read_data():
     
     print df.describe()
     
-    #print df.head()
     minlon, maxlon = df['longitude'].min(), df['longitude'].max()
     minlat, maxlat = df['latitude'].min(), df['latitude'].max()
     
+    if not os.path.exists('html'):
+        os.makedirs('html')
+    plot_files = []
+    for col in ['laplength', 'speed', 'temperature', 'rpm', 'engine_temp', 'height']:
+        plt.clf()
+        df[col].hist()
+        plt.title('Histogram of %s' % col)
+        plt.savefig('html/%s_hist.png' % col)
+        plot_files.append('%s_hist.png' % col)
+    
     with open('MAP_TEMPLATE.html', 'r') as inphtml:
-        with open('index.html', 'w') as outhtml:
+        with open('html/index.html', 'w') as outhtml:
             for line in inphtml:
                 if 'SPORTTITLEDATE' in line:
                     outhtml.write(line.replace('SPORTTITLEDATE', 'CarData'))
@@ -57,8 +71,12 @@ def read_data():
                         if pd.isnull(df['latitude'].iloc[idx]) or pd.isnull(df['longitude'].iloc[idx]):
                             continue
                         outhtml.write('new google.maps.LatLng(%f,%f),\n' % (df['latitude'].iloc[idx], df['longitude'].iloc[idx]))
+                elif 'INSERTOTHERIMAGESHERE' in line:
+                    for plot_file in plot_files:
+                        outhtml.write('<p>\n<img src="%s">\n</p>' % plot_file)
                 else:
                     outhtml.write(line)
+    return df
     
 if __name__ == '__main__':
     read_data()
