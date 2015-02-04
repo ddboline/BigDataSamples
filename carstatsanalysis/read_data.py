@@ -28,17 +28,13 @@ def parse_long_string(inpstr):
     return lval
 
 def read_data():
-    car_columns = ['lapno', 'laplength', 'laptime', 'laptime2', 'speed', 'lataccel', 
-                'longaccel', 'temperature', 'steering_angle', 'rpm', 'engine_temp', 
+    car_columns = ['lapno', 'laplength', 'laptime', 'laptime2', 'speed', 'lataccel',
+                'longaccel', 'temperature', 'steering_angle', 'rpm', 'engine_temp',
                 'gear', 'height', 'longitude', 'latitude', 'lat_string', 'long_string']
 
     #print help(pd.read_csv)
     df = pd.read_csv('data.csv', sep=';', header=None, names=car_columns)
 
-    print df['laptime2']
-    #print df.shape
-    #print df.columns
-    #print df.head()
     df['longitude'] = df['long_string'].apply(parse_long_string)
     df['latitude'] = df['lat_string'].apply(parse_long_string)
     
@@ -56,6 +52,16 @@ def read_data():
         plt.title('Histogram of %s' % col)
         plt.savefig('html/%s_hist.png' % col)
         plot_files.append('%s_hist.png' % col)
+    
+    exit(0)
+    df = df.drop(['lapno'], axis=1)
+    nonzero_lap = df['laplength'] > 0
+    df = df[nonzero_lap]
+    print df.columns
+    pd.scatter_matrix(df, diagonal='hist')
+    plt.title('Scatter Matrix')
+    plt.savefig('html/scatter_matrix.png')
+    plot_files.append('scatter_matrix.png')
     
     with open('MAP_TEMPLATE.html', 'r') as inphtml:
         with open('html/index.html', 'w') as outhtml:
